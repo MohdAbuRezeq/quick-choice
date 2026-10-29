@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quote Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+<style>
+  /* Tokens: plaster wall, workwear blue, folding-ruler yellow */
+  :root {
+    --plaster: #E7EAE8;
+    --paper: #FFFFFF;
+    --blau: #1C3150;
+    --blau-2: #26416A;
+    --blau-3: #34557F;
+    --ink: #17212E;
+    --muted: #5A6575;
+    --line: #CBD2D9;
+    --ruler: #F3C623;
+    --ruler-ink: #3A2E00;
+    --green: #169C47;
+    --green-hi: #1DB955;
+    --red: #D4372B;
+    --font: "Archivo", system-ui, sans-serif;
+    --r-big: 28px;
+    --r-mid: 14px;
+    --r-small: 8px;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--font);
+    background: #C9CFCC;
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--ruler); outline-offset: 2px; }
+
+  /* Mockup switcher (not part of the real app) */
+  .mockbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    padding: 8px 16px;
+    background: #2B2F33; color: #E8EAEC; font-size: 13px;
+  }
+  .mockbar strong { margin-right: 6px; font-weight: 600; opacity: .7; }
+  .mockbar button {
+    border: 1px solid #4A5057; background: transparent; border-radius: 999px;
+    padding: 4px 12px; font-size: 13px;
+  }
+  .mockbar button[aria-current="true"] { background: var(--ruler); color: var(--ruler-ink); border-color: var(--ruler); }
+  .mockbar .spacer { flex: 1; }
+
+  /* Phone frame on wide screens, full screen on phones */
+  .device {
+    width: 100%; max-width: 410px; margin: 24px auto;
+    min-height: 840px;
+    background: var(--plaster);
+    border-radius: 40px; overflow: hidden;
+    box-shadow: 0 0 0 10px #1A1D20, 0 30px 60px rgba(20, 30, 40, .35);
+    position: relative;
+  }
+  body.wide .device { max-width: none; margin: 0; border-radius: 0; box-shadow: none; min-height: 100dvh; }
+  @media (max-width: 480px) {
+    body { background: var(--plaster); }
+    .device { margin: 0; border-radius: 0; box-shadow: none; min-height: 100dvh; }
+  }
+
+  .screen { display: none; min-height: inherit; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* Shared top bar */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px 8px; gap: 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-stretch: 110%; }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 6px;
+    background: var(--ruler) repeating-linear-gradient(90deg, transparent 0 5px, var(--ruler-ink) 5px 6px) bottom / 100% 7px no-repeat;
+  }
+  .lang {
+    display: inline-flex; border: 1.5px solid currentColor; border-radius: 999px; padding: 2px;
+    font-size: 13px; font-weight: 700;
+  }
+  .lang button { border: 0; background: transparent; padding: 3px 10px; border-radius: 999px; }
+  .lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .on-blue .lang button[aria-pressed="true"] { background: var(--paper); color: var(--blau); }
+
+  /* Home */
+  .home-body { flex: 1; display: flex; flex-direction: column; padding: 12px 24px 28px; }
+  .home-body h1 {
+    font-size: 40px; line-height: 1.02; font-weight: 800; font-stretch: 118%;
+    letter-spacing: -0.01em; margin: 28px 0 12px;
+  }
+  .home-body .lead { color: var(--muted); margin: 0; max-width: 30ch; }
+  .call-zone { display: flex; flex-direction: column; align-items: center; margin: 44px 0 36px; gap: 14px; }
+  .call-btn {
+    width: 136px; height: 136px; border-radius: 50%; border: 0;
+    background: var(--green); color: #fff;
+    display: grid; place-items: center;
+    box-shadow: 0 0 0 10px rgba(22, 156, 71, .16), 0 14px 26px rgba(22, 156, 71, .35);
+    transition: transform .12s ease, background .12s ease;
+  }
+  .call-btn:hover { background: var(--green-hi); }
+  .call-btn:active { transform: scale(.96); }
+  .call-btn svg { width: 54px; height: 54px; }
+  .call-label { font-weight: 700; font-size: 18px; }
+  .type-link { background: none; border: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: 15px; }
+  .recent h2 { font-size: 15px; font-weight: 700; margin: 0 0 8px; }
+  .recent ul { list-style: none; margin: 0; padding: 0; border-top: 1.5px solid var(--line); }
+  .recent li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1.5px solid var(--line); }
+  .recent .who { color: var(--muted); font-size: 14px; }
+  .recent .amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Call */
+  .on-blue { background: var(--blau); color: #fff; }
+  #screen-call .topbar { padding-bottom: 0; }
+  .call-head { text-align: center; padding: 8px 20px 0; }
+  .call-head .name { font-size: 22px; font-weight: 700; font-stretch: 112%; }
+  .call-head .meta { opacity: .75; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .voice {
+    width: 104px; height: 104px; margin: 18px auto 14px; border-radius: 50%;
+    background: var(--blau-2); display: flex; align-items: center; justify-content: center; gap: 5px;
+    position: relative;
+  }
+  .voice::after {
+    content: ""; position: absolute; inset: -10px; border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, .25); opacity: 0;
+  }
+  .voice.speaking::after { animation: ring 1.4s ease-out infinite; }
+  .voice i { width: 6px; height: 10px; border-radius: 3px; background: #fff; display: block; transition: height .2s; }
+  .voice.speaking i { animation: bar .9s ease-in-out infinite; }
+  .voice.speaking i:nth-child(2) { animation-delay: .15s; }
+  .voice.speaking i:nth-child(3) { animation-delay: .3s; }
+  .voice.speaking i:nth-child(4) { animation-delay: .45s; }
+  .voice.speaking i:nth-child(5) { animation-delay: .6s; }
+  @keyframes bar { 0%, 100% { height: 10px; } 50% { height: 38px; } }
+  @keyframes ring { 0% { opacity: .9; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.35); } }
+
+  /* The folding ruler: one segment per fact the assistant has collected */
+  .ruler-wrap { padding: 0 20px; }
+  .ruler-cap { font-size: 12px; opacity: .75; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .ruler { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+  .seg {
+    height: 34px; border-radius: 3px; position: relative;
+    background: rgba(255, 255, 255, .1)
+      repeating-linear-gradient(90deg, transparent 0 7px, rgba(255, 255, 255, .25) 7px 8px) top / 100% 7px no-repeat;
+    font-size: 10.5px; font-weight: 700; display: flex; align-items: flex-end; padding: 0 5px 4px;
+    color: rgba(255, 255, 255, .55); overflow: hidden; white-space: nowrap;
+    transition: background-color .35s ease, color .35s ease;
+  }
+  .seg.filled {
+    background-color: var(--ruler); color: var(--ruler-ink);
+    background-image: repeating-linear-gradient(90deg, transparent 0 7px, var(--ruler-ink) 7px 8px);
+  }
+
+  .transcript {
+    flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px;
+    min-height: 220px; max-height: 330px;
+    margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, .12);
+  }
+  .msg { max-width: 84%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.35; }
+  .msg.a { background: var(--blau-2); align-self: flex-start; border-bottom-left-radius: 6px; }
+  .msg.u { background: var(--paper); color: var(--ink); align-self: flex-end; border-bottom-right-radius: 6px; }
+  .msg.typed::after { content: " (typed)"; opacity: .55; font-size: 12px; }
+  html[lang="de"] .msg.typed::after { content: " (getippt)"; }
+
+  .call-foot { padding: 8px 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+  .typebox { display: flex; gap: 8px; }
+  .typebox input {
+    flex: 1; min-width: 0; border: 0; border-radius: 999px; padding: 10px 16px; font-size: 15px;
+    background: rgba(255, 255, 255, .12); color: #fff;
+  }
+  .typebox input::placeholder { color: rgba(255, 255, 255, .6); }
+  .typebox button { border: 0; border-radius: 999px; padding: 10px 16px; background: rgba(255, 255, 255, .2); color: #fff; font-weight: 700; }
+  .controls { display: flex; justify-content: center; gap: 28px; align-items: center; }
+  .round {
+    width: 64px; height: 64px; border-radius: 50%; border: 0; display: grid; place-items: center;
+    background: rgba(255, 255, 255, .14); color: #fff;
+  }
+  .round svg { width: 28px; height: 28px; }
+  .round[aria-pressed="true"] { background: #fff; color: var(--blau); }
+  .round.hang { background: var(--red); width: 72px; height: 72px; }
+  .round-label { display: block; text-align: center; font-size: 12px; opacity: .8; margin-top: 6px; }
+  .done-btn {
+    border: 0; border-radius: var(--r-mid); padding: 16px; font-weight: 800; font-size: 17px;
+    background: var(--ruler); color: var(--ruler-ink); display: none;
+  }
+  .done .done-btn { display: block; }
+  .notice {
+    margin: 0; padding: 10px 14px; border-radius: var(--r-small); font-size: 14px;
+    background: #FFF6D6; color: #4A3B00;
+  }
+  .notice[hidden] { display: none; }
+  .quote-empty { text-align: center; padding: 60px 24px; color: var(--muted); }
+  .quote-empty .btn { margin-top: 16px; max-width: 240px; }
+
+  /* Quote */
+  .quote-body { padding: 4px 14px 32px; display: flex; flex-direction: column; gap: 16px; }
+  .back { border: 0; background: none; font-weight: 700; padding: 6px 0; display: inline-flex; gap: 6px; align-items: center; }
+  .doc {
+    background: var(--paper); border-radius: var(--r-small); padding: 22px 18px 20px;
+    box-shadow: 0 1px 0 var(--line), 0 10px 24px rgba(28, 49, 80, .12);
+    font-size: 13px; line-height: 1.45;
+  }
+  .doc-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .doc-firm { font-weight: 800; font-size: 16px; font-stretch: 112%; }
+  .doc-small { color: var(--muted); font-size: 11.5px; }
+  .doc-sender { color: var(--muted); font-size: 10.5px; border-bottom: 1px solid var(--line); padding-bottom: 2px; margin: 22px 0 6px; display: inline-block; }
+  .doc-to { margin: 0 0 18px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 1px 10px; font-size: 11.5px; text-align: right; }
+  .doc-meta dt { color: var(--muted); }
+  .doc-meta dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .doc h2 { font-size: 24px; font-weight: 800; font-stretch: 116%; margin: 4px 0 4px; }
+  .doc .intro { margin: 0 0 14px; }
+  .items { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .items th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 6px 4px; border-bottom: 1.5px solid var(--ink); }
+  .items td { padding: 8px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .items .num { text-align: right; white-space: nowrap; }
+  .items .qty { color: var(--muted); font-size: 11.5px; display: block; }
+  .open-price {
+    display: inline-block; border: 1.5px dashed #B99300; background: #FFF6D6; color: #6B5500;
+    border-radius: 4px; padding: 0 6px; font-weight: 700; font-size: 11.5px;
+  }
+  .totals { margin: 12px 0 0 auto; width: 76%; font-variant-numeric: tabular-nums; }
+  .totals div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .totals .grand { border-top: 1.5px solid var(--ink); margin-top: 4px; padding-top: 7px; font-weight: 800; font-size: 16px; }
+  .note { margin-top: 12px; padding: 8px 10px; background: #FFF6D6; border-left: 3px solid var(--ruler); font-size: 12px; }
+  .doc-foot { margin-top: 18px; color: var(--muted); font-size: 11px; }
+
+  .actions { display: flex; gap: 10px; }
+  .btn {
+    flex: 1; border: 0; border-radius: var(--r-mid); padding: 14px; font-weight: 800; font-size: 16px;
+  }
+  .btn.primary { background: var(--blau); color: #fff; }
+  .btn.ghost { background: transparent; border: 1.5px solid var(--ink); }
+
+  .vote { background: var(--paper); border-radius: var(--r-mid); padding: 18px; border: 1.5px solid var(--line); }
+  .vote p { margin: 0 0 12px; font-weight: 700; font-size: 17px; }
+  .vote-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .vote-opts button {
+    border: 1.5px solid var(--ink); background: transparent; border-radius: var(--r-small);
+    padding: 11px 0; font-weight: 700;
+  }
+  .vote-opts button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .vote .thanks { margin: 10px 0 0; font-size: 14px; color: var(--muted); min-height: 1.4em; font-weight: 400; }
+
+  /* Stats (projector) */
+  #screen-stats { padding: 28px clamp(16px, 4vw, 64px) 40px; }
+  .stats-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .stats-top h1 { margin: 0; font-size: clamp(22px, 2.6vw, 36px); font-weight: 700; font-stretch: 112%; }
+  .live { display: inline-flex; align-items: center; gap: 8px; font-size: clamp(14px, 1.3vw, 18px); opacity: .85; font-variant-numeric: tabular-nums; }
+  .live::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--green-hi); animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .stats-grid { flex: 1; display: grid; grid-template-columns: 1fr 1.4fr; gap: clamp(24px, 5vw, 80px); align-items: center; margin-top: 24px; }
+  .big-count {
+    font-size: clamp(120px, 20vw, 300px); line-height: .85; font-weight: 900; font-stretch: 125%;
+    color: var(--ruler); font-variant-numeric: tabular-nums;
+  }
+  .big-label { font-size: clamp(20px, 2.4vw, 34px); font-weight: 600; margin-top: 12px; }
+  .vq { font-size: clamp(20px, 2.2vw, 32px); font-weight: 700; margin: 0 0 24px; }
+  .bar-row { display: grid; grid-template-columns: 5.5em 1fr 4.8em; gap: 16px; align-items: center; margin-bottom: 18px; font-size: clamp(18px, 2vw, 30px); }
+  .bar-row .bl { font-weight: 700; }
+  .bar-track { height: clamp(28px, 3.6vw, 56px); background: var(--blau-2); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; width: 0; transition: width .8s ease; }
+  .bar-row.yes .bar-fill { background: var(--green-hi); }
+  .bar-row.maybe .bar-fill { background: var(--ruler); }
+  .bar-row.no .bar-fill { background: #9FB0C6; }
+  .bar-row .bn { text-align: right; font-variant-numeric: tabular-nums; font-weight: 800; }
+  .bar-row .bn small { display: block; font-size: .55em; font-weight: 500; opacity: .75; }
+  .total-votes { font-size: clamp(14px, 1.3vw, 18px); opacity: .75; }
+  @media (max-width: 760px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 4.5em 1fr 3.8em; gap: 10px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
+  @media print {
+    body * { visibility: hidden; }
+    body { background: #fff; }
+    .doc, .doc * { visibility: visible; }
+    .doc { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; font-size: 12pt; padding: 0; }
+    .mockbar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="device">
+
+  <!-- HOME -->
+  <section class="screen" id="screen-home">
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Fliesen Weber</div>
+      <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+    </div>
+    <div class="home-body">
+      <h1 data-i18n="homeTitle"></h1>
+      <p class="lead" data-i18n="homeLead"></p>
+      <div class="call-zone">
+        <button class="call-btn" data-go="call" data-i18n-label="startCall">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>
+        </button>
+        <span class="call-label" data-i18n="startCall"></span>
+        <button class="type-link" id="type-instead" data-i18n="typeInstead"></button>
+      </div>
+      <div class="recent" id="recent" hidden>
+        <h2 data-i18n="recent"></h2>
+        <ul id="recent-list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALL -->
+  <section class="screen on-blue" id="screen-call">
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Fliesen Weber</div>
+      <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+    </div>
+    <div class="call-head">
+      <div class="name" data-i18n="assistant"></div>
+      <div class="meta"><span id="call-state"></span>, <span id="timer">00:00</span></div>
+    </div>
+    <div class="voice" id="voice" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="ruler-wrap">
+      <div class="ruler-cap"><span data-i18n="rulerCap"></span><span id="ruler-count">0 / 6</span></div>
+      <div class="ruler" id="ruler"></div>
+    </div>
+    <div class="transcript" id="transcript" aria-live="polite"></div>
+    <div class="call-foot" id="call-foot">
+      <p class="notice" id="notice" role="status" hidden></p>
+      <form class="typebox" id="typebox">
+        <input id="typed" autocomplete="off" data-i18n-ph="typePh">
+        <button type="submit" data-i18n="send"></button>
+      </form>
+      <div class="controls">
+        <div><button class="round" id="mute" aria-pressed="false" data-i18n-label="mute">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></svg>
+        </button><span class="round-label" data-i18n="mute"></span></div>
+        <div><button class="round hang" id="hangup" data-i18n-label="hangup">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1a1 1 0 0 1-.56.9 11.5 11.5 0 0 0-2.66 1.85 1 1 0 0 1-1.4 0L.29 13.08a1 1 0 0 1 0-1.41C3.34 8.77 7.46 7 12 7s8.66 1.77 11.71 4.67a1 1 0 0 1 0 1.41l-2.48 2.49a1 1 0 0 1-1.4 0 11.3 11.3 0 0 0-2.67-1.85 1 1 0 0 1-.56-.9v-3.1A15 15 0 0 0 12 9z"/></svg>
+        </button><span class="round-label" data-i18n="hangup"></span></div>
+      </div>
+      <button class="done-btn" data-go="quote" data-i18n="openQuote"></button>
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <section class="screen" id="screen-quote">
+    <div class="topbar">
+      <button class="back" data-go="home"><span aria-hidden="true">&lsaquo;</span> <span data-i18n="back"></span></button>
+      <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+    </div>
+    <div class="quote-empty" id="quote-empty">
+      <p data-i18n="noQuote"></p>
+      <button class="btn primary" data-go="call" data-i18n="startCall"></button>
+    </div>
+    <div class="quote-body" id="quote-content" hidden>
+      <article class="doc" id="doc">
+        <div class="doc-head">
+          <div>
+            <div class="doc-firm">Fliesen Weber</div>
+            <div class="doc-small">Jonas Weber, Meisterbetrieb<br>Hauptstraße 4, 80331 München<br>089 123 456 78</div>
+          </div>
+          <dl class="doc-meta">
+            <dt data-i18n="qNo"></dt><dd id="q-no"></dd>
+            <dt data-i18n="qDate"></dt><dd id="q-date"></dd>
+            <dt data-i18n="qValid"></dt><dd id="q-valid"></dd>
+          </dl>
+        </div>
+        <div class="doc-sender">Fliesen Weber, Hauptstraße 4, 80331 München</div>
+        <div class="doc-to" id="q-to"></div>
+        <h2 data-i18n="docTitle"></h2>
+        <p class="intro" id="q-intro"></p>
+        <table class="items">
+          <thead><tr><th data-i18n="thItem"></th><th class="num" data-i18n="thPrice"></th><th class="num" data-i18n="thSum"></th></tr></thead>
+          <tbody id="items"></tbody>
+        </table>
+        <div class="totals">
+          <div><span data-i18n="net"></span><span id="t-net"></span></div>
+          <div><span data-i18n="vat"></span><span id="t-vat"></span></div>
+          <div class="grand"><span data-i18n="total"></span><span id="t-total"></span></div>
+        </div>
+        <div class="note" id="q-note" data-i18n="openNote"></div>
+        <div class="doc-foot" data-i18n="docFoot"></div>
+      </article>
+
+      <div class="actions">
+        <button class="btn primary" id="pdf" data-i18n="savePdf"></button>
+        <button class="btn ghost" id="edit-voice" data-go="call" data-i18n="editByVoice"></button>
+      </div>
+
+      <div class="vote">
+        <p data-i18n="voteQ"></p>
+        <div class="vote-opts" role="group">
+          <button data-vote="yes" aria-pressed="false" data-i18n="yes"></button>
+          <button data-vote="maybe" aria-pressed="false" data-i18n="maybe"></button>
+          <button data-vote="no" aria-pressed="false" data-i18n="no"></button>
+        </div>
+        <p class="thanks" id="thanks" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="screen on-blue" id="screen-stats">
+    <div class="stats-top">
+      <h1 data-i18n="statsTitle"></h1>
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+        <span class="live" id="live"></span>
+        <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div>
+        <div class="big-count" id="s-quotes">0</div>
+        <div class="big-label" data-i18n="quotesMade"></div>
+      </div>
+      <div>
+        <p class="vq" data-i18n="voteQ"></p>
+        <div class="bar-row yes"><span class="bl" data-i18n="yes"></span><div class="bar-track"><div class="bar-fill"></div></div><span class="bn"></span></div>
+        <div class="bar-row maybe"><span class="bl" data-i18n="maybe"></span><div class="bar-track"><div class="bar-fill"></div></div><span class="bn"></span></div>
+        <div class="bar-row no"><span class="bl" data-i18n="no"></span><div class="bar-track"><div class="bar-fill"></div></div><span class="bn"></span></div>
+        <div class="total-votes" id="s-votes"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
