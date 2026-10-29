@@ -23,6 +23,8 @@
     --green: #169C47;
     --green-hi: #1DB955;
     --red: #D4372B;
+    --violet: #7A3FE0;
+    --violet-hi: #8B55F0;
     --font: "Archivo", system-ui, sans-serif;
     --r-big: 28px;
     --r-mid: 14px;
@@ -104,12 +106,12 @@
   .call-zone { display: flex; flex-direction: column; align-items: center; margin: 44px 0 36px; gap: 14px; }
   .call-btn {
     width: 136px; height: 136px; border-radius: 50%; border: 0;
-    background: var(--green); color: #fff;
+    background: var(--violet); color: #fff;
     display: grid; place-items: center;
-    box-shadow: 0 0 0 10px rgba(22, 156, 71, .16), 0 14px 26px rgba(22, 156, 71, .35);
+    box-shadow: 0 0 0 10px rgba(122, 63, 224, .16), 0 14px 26px rgba(122, 63, 224, .35);
     transition: transform .12s ease, background .12s ease;
   }
-  .call-btn:hover { background: var(--green-hi); }
+  .call-btn:hover { background: var(--violet-hi); }
   .call-btn:active { transform: scale(.96); }
   .call-btn svg { width: 54px; height: 54px; }
   .call-label { font-weight: 700; font-size: 18px; }
@@ -302,7 +304,7 @@
   <!-- HOME -->
   <section class="screen" id="screen-home">
     <div class="topbar">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Fliesen Weber</div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Quick Choice</div>
       <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
     </div>
     <div class="home-body">
@@ -325,7 +327,7 @@
   <!-- CALL -->
   <section class="screen on-blue" id="screen-call">
     <div class="topbar">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Fliesen Weber</div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Quick Choice</div>
       <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
     </div>
     <div class="call-head">
@@ -370,7 +372,7 @@
       <article class="doc" id="doc">
         <div class="doc-head">
           <div>
-            <div class="doc-firm">Fliesen Weber</div>
+            <div class="doc-firm">Quick Choice</div>
             <div class="doc-small">Jonas Weber, Meisterbetrieb<br>Hauptstraße 4, 80331 München<br>089 123 456 78</div>
           </div>
           <dl class="doc-meta">
@@ -379,7 +381,7 @@
             <dt data-i18n="qValid"></dt><dd id="q-valid"></dd>
           </dl>
         </div>
-        <div class="doc-sender">Fliesen Weber, Hauptstraße 4, 80331 München</div>
+        <div class="doc-sender">Quick Choice, Hauptstraße 4, 80331 München</div>
         <div class="doc-to" id="q-to"></div>
         <h2 data-i18n="docTitle"></h2>
         <p class="intro" id="q-intro"></p>
