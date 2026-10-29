@@ -96,6 +96,35 @@
   .lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
   .on-blue .lang button[aria-pressed="true"] { background: var(--paper); color: var(--blau); }
 
+  .top-right { display: flex; align-items: center; gap: 8px; }
+  .account-btn {
+    border: 0; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 700;
+    background: var(--ink); color: var(--paper);
+    max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .brand, .login-btn, .account-btn { white-space: nowrap; }
+  .home-foot { margin-top: auto; padding-top: 28px; display: flex; justify-content: center; }
+  .login-btn {
+    border: 0; background: transparent; padding: 6px 4px; font-size: 14px; font-weight: 700;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .account-btn.logged-in { background: transparent; color: var(--ink); border: 1.5px solid var(--line); font-weight: 600; }
+
+  /* Account */
+  .account-body { padding: 12px 24px 32px; }
+  .account-body h1 { font-size: 32px; line-height: 1.05; font-weight: 800; font-stretch: 116%; margin: 24px 0 10px; }
+  .account-body .lead { color: var(--muted); margin: 0 0 24px; }
+  #auth-form, #auth-done { display: flex; flex-direction: column; gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 14px; }
+  .field input {
+    border: 1.5px solid var(--line); border-radius: var(--r-small); padding: 13px 14px;
+    font-size: 16px; font-weight: 400; background: var(--paper);
+  }
+  .field input:focus-visible { border-color: var(--ink); outline-offset: 0; }
+  .field small { font-weight: 400; color: var(--muted); font-size: 13px; }
+  .auth-error { margin: 0; padding: 10px 14px; border-radius: var(--r-small); background: #FCE4E2; color: #8A1F16; font-size: 14px; }
+  #auth-form .btn, #auth-done .btn { flex: none; }
+
   /* Home */
   .home-body { flex: 1; display: flex; flex-direction: column; padding: 12px 24px 28px; }
   .home-body h1 {
@@ -305,10 +334,13 @@
   <section class="screen" id="screen-home">
     <div class="topbar">
       <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Quick Choice</div>
-      <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+      <div class="top-right">
+        <button class="login-btn" id="login-btn" data-go="account" data-i18n="logIn"></button>
+        <button class="account-btn" id="account-btn" data-go="account" data-i18n="signUp"></button>
+      </div>
     </div>
     <div class="home-body">
-      <h1 data-i18n="homeTitle"></h1>
+      <h1 id="home-title"></h1>
       <p class="lead" data-i18n="homeLead"></p>
       <div class="call-zone">
         <button class="call-btn" data-go="call" data-i18n-label="startCall">
@@ -320,6 +352,9 @@
       <div class="recent" id="recent" hidden>
         <h2 data-i18n="recent"></h2>
         <ul id="recent-list"></ul>
+      </div>
+      <div class="home-foot">
+        <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
       </div>
     </div>
   </section>
@@ -355,6 +390,41 @@
         </button><span class="round-label" data-i18n="hangup"></span></div>
       </div>
       <button class="done-btn" data-go="quote" data-i18n="openQuote"></button>
+    </div>
+  </section>
+
+  <!-- ACCOUNT -->
+  <section class="screen" id="screen-account">
+    <div class="topbar">
+      <button class="back" data-go="home"><span aria-hidden="true">&lsaquo;</span> <span data-i18n="back"></span></button>
+      <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+    </div>
+    <div class="account-body">
+      <!-- Logged out: sign up or log in -->
+      <form id="auth-form" novalidate>
+        <h1 id="auth-title"></h1>
+        <p class="lead" id="auth-lead"></p>
+        <label class="field" id="name-field"><span data-i18n="yourName"></span>
+          <input type="text" id="auth-name" autocomplete="name" maxlength="60">
+        </label>
+        <label class="field"><span data-i18n="email"></span>
+          <input type="email" id="auth-email" autocomplete="email" required>
+        </label>
+        <label class="field"><span data-i18n="password"></span>
+          <input type="password" id="auth-password" minlength="8" required>
+          <small data-i18n="passwordHint"></small>
+        </label>
+        <p class="auth-error" id="auth-error" role="alert" hidden></p>
+        <button class="btn primary" type="submit" id="auth-submit"></button>
+        <button class="type-link" type="button" id="auth-switch"></button>
+      </form>
+      <!-- Logged in -->
+      <div id="auth-done" hidden>
+        <h1 data-i18n="loggedInTitle"></h1>
+        <p class="lead"><span data-i18n="loggedInAs"></span> <strong id="auth-email-shown"></strong></p>
+        <button class="btn primary" data-go="call" data-i18n="startCall"></button>
+        <button class="btn ghost" id="logout" data-i18n="logOut"></button>
+      </div>
     </div>
   </section>
 

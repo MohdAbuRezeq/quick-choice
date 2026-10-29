@@ -9,7 +9,7 @@ const VAT_RATE = 0.19;
 /* ---------- Text ---------- */
 const T = {
   en: {
-    homeTitle: "Good evening, Jonas.",
+    greet: ["Good morning", "Good afternoon", "Good evening"],
     homeLead: "Tell me about the job. I'll ask a few short questions and write the quote for you.",
     startCall: "Start call",
     typeInstead: "No microphone? Type instead",
@@ -44,10 +44,26 @@ const T = {
     updated: t => `Live, updated ${t}`,
     units: { m2: "m²", m: "m", pcs: "pcs", h: "h", flat: "flat rate" },
     labourQty: (h, p, d) => `${h} h (${p} × ${d} days)`,
-    speakNow: "From now on, speak English."
+    speakNow: "From now on, speak English.",
+    signUp: "Sign up", logIn: "Log in", logOut: "Log out",
+    yourName: "Your name", email: "Email", password: "Password", passwordHint: "At least 8 characters",
+    signUpTitle: "Create your account", logInTitle: "Welcome back",
+    signUpLead: "Sign up with your email to write quotes by phone call.",
+    logInLead: "Log in with your email and password.",
+    callLead: "Sign up or log in first, then you can start a call.",
+    toLogIn: "Already have an account? Log in", toSignUp: "New here? Sign up",
+    loggedInTitle: "You're logged in", loggedInAs: "Logged in as",
+    errors: {
+      missing_name: "Please enter your name.",
+      invalid_email: "Please enter a valid email address.",
+      weak_password: "The password needs at least 8 characters.",
+      email_taken: "There's already an account with this email. Log in instead.",
+      wrong_login: "Email or password is wrong.",
+      other: "That didn't work. Please try again."
+    }
   },
   de: {
-    homeTitle: "Guten Abend, Jonas.",
+    greet: ["Guten Morgen", "Guten Tag", "Guten Abend"],
     homeLead: "Erzähl mir vom Auftrag. Ich stelle ein paar kurze Fragen und schreibe das Angebot für dich.",
     startCall: "Anruf starten",
     typeInstead: "Kein Mikrofon? Lieber tippen",
@@ -82,7 +98,23 @@ const T = {
     updated: t => `Live, aktualisiert ${t}`,
     units: { m2: "m²", m: "m", pcs: "Stk.", h: "Std.", flat: "pauschal" },
     labourQty: (h, p, d) => `${h} Std. (${p} × ${d} Tage)`,
-    speakNow: "Sprich ab jetzt Deutsch."
+    speakNow: "Sprich ab jetzt Deutsch.",
+    signUp: "Registrieren", logIn: "Anmelden", logOut: "Abmelden",
+    yourName: "Dein Name", email: "E-Mail", password: "Passwort", passwordHint: "Mindestens 8 Zeichen",
+    signUpTitle: "Konto erstellen", logInTitle: "Willkommen zurück",
+    signUpLead: "Registriere dich mit deiner E-Mail, um Angebote per Anruf zu schreiben.",
+    logInLead: "Melde dich mit E-Mail und Passwort an.",
+    callLead: "Registriere dich oder melde dich an, dann kannst du anrufen.",
+    toLogIn: "Schon ein Konto? Anmelden", toSignUp: "Neu hier? Registrieren",
+    loggedInTitle: "Du bist angemeldet", loggedInAs: "Angemeldet als",
+    errors: {
+      missing_name: "Bitte gib deinen Namen ein.",
+      invalid_email: "Bitte gib eine gültige E-Mail-Adresse ein.",
+      weak_password: "Das Passwort braucht mindestens 8 Zeichen.",
+      email_taken: "Mit dieser E-Mail gibt es schon ein Konto. Melde dich an.",
+      wrong_login: "E-Mail oder Passwort ist falsch.",
+      other: "Das hat nicht geklappt. Bitte versuch es noch einmal."
+    }
   }
 };
 const FACTS = ["job", "size", "material", "crew", "days", "customer"];
@@ -98,6 +130,9 @@ let quote = null;           // the quote on screen
 const recent = [];          // quotes made in this session
 const stats = { quotes: 0, yes: 0, maybe: 0, no: 0 }; // TODO: save on the server
 let myVote = null;
+let user = null;            // { email } when logged in
+let authMode = "signup";    // "signup" or "login"
+let authForCall = false;    // came here by tapping the call button
 
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
@@ -126,7 +161,7 @@ function applyLang() {
   $$("[data-i18n-ph]").forEach(el => el.placeholder = t[el.dataset.i18nPh]);
   $$("[data-i18n-label]").forEach(el => el.setAttribute("aria-label", t[el.dataset.i18nLabel]));
   $$("[data-lang]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
-  renderRuler(); renderTranscript(); renderQuote(); renderRecent(); renderStats();
+  renderRuler(); renderTranscript(); renderQuote(); renderRecent(); renderStats(); renderAccount();
   if (myVote) $("#thanks").textContent = t.thanks;
   setCallState(call.state);
 }
@@ -139,7 +174,7 @@ $$("[data-lang]").forEach(b => b.addEventListener("click", () => {
 }));
 
 /* ---------- Routing ---------- */
-const SCREENS = ["home", "call", "quote", "stats"];
+const SCREENS = ["home", "call", "quote", "stats", "account"];
 function current() {
   if (location.pathname.replace(/\/$/, "") === "/stats") return "stats";
   const h = location.hash.replace("#/", "");
@@ -152,6 +187,8 @@ function go(name) {
   else show(name);
 }
 function show(name) {
+  if (name === "call" && !user) { authForCall = true; go("account"); return; }
+  if (name === "account") renderAccount();
   $$(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-" + name));
   document.body.classList.toggle("wide", name === "stats");
   if (name === "call") { if (!call.pc) startCall(); }
@@ -202,6 +239,7 @@ async function startCall() {
     // 1. Get a short-lived pass from our server
     const r = await fetch(`/api/session?lang=${lang}`, { method: "POST" });
     const session = await r.json();
+    if (r.status === 401) { user = null; endCall(); go("call"); return; } // logged out meanwhile
     if (!r.ok) throw new Error(session.error || "Server error");
     if (gen !== call.gen) return;
 
@@ -460,6 +498,70 @@ $("#recent-list").addEventListener("click", e => {
   if (li) { quote = recent[+li.dataset.recent]; renderQuote(); go("quote"); }
 });
 
+/* ---------- Account ---------- */
+function renderAccount() {
+  const t = T[lang];
+  const btn = $("#account-btn");
+  btn.textContent = user ? user.email : t.signUp;
+  btn.classList.toggle("logged-in", !!user);
+  $("#login-btn").hidden = !!user;
+  const hour = new Date().getHours();
+  const greet = t.greet[hour < 12 ? 0 : hour < 18 ? 1 : 2];
+  $("#home-title").textContent = user?.name ? `${greet}, ${user.name}.` : `${greet}.`;
+  $("#auth-form").hidden = !!user;
+  $("#auth-done").hidden = !user;
+  if (user) { $("#auth-email-shown").textContent = user.email; return; }
+  const signup = authMode === "signup";
+  $("#auth-title").textContent = signup ? t.signUpTitle : t.logInTitle;
+  $("#auth-lead").textContent = authForCall ? t.callLead : signup ? t.signUpLead : t.logInLead;
+  $("#auth-submit").textContent = signup ? t.signUp : t.logIn;
+  $("#auth-switch").textContent = signup ? t.toLogIn : t.toSignUp;
+  $("#auth-password").autocomplete = signup ? "new-password" : "current-password";
+  $("#name-field").hidden = !signup;
+  $("#auth-password").closest(".field").querySelector("small").hidden = !signup;
+}
+function authError(code) {
+  const e = T[lang].errors;
+  $("#auth-error").textContent = code ? e[code] || e.other : "";
+  $("#auth-error").hidden = !code;
+}
+$("#auth-switch").addEventListener("click", () => {
+  authMode = authMode === "signup" ? "login" : "signup";
+  authError(null);
+  renderAccount();
+});
+$("#auth-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  authError(null);
+  $("#auth-submit").disabled = true;
+  try {
+    const r = await fetch(`/api/${authMode}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: $("#auth-name").value, email: $("#auth-email").value, password: $("#auth-password").value })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { authError(data.error || "other"); return; }
+    user = data.user;
+    $("#auth-password").value = "";
+    renderAccount();
+    if (authForCall) { authForCall = false; go("call"); }
+  } catch {
+    authError("other");
+  } finally {
+    $("#auth-submit").disabled = false;
+  }
+});
+$("#logout").addEventListener("click", async () => {
+  await fetch("/api/logout", { method: "POST" }).catch(() => {});
+  user = null;
+  authMode = "login";
+  renderAccount();
+  go("home");
+});
+$("#account-btn").addEventListener("click", () => { authForCall = false; if (!user) authMode = "signup"; authError(null); });
+$("#login-btn").addEventListener("click", () => { authForCall = false; authMode = "login"; authError(null); });
+
 /* ---------- Vote ---------- */
 $$("[data-vote]").forEach(b => b.addEventListener("click", () => {
   const v = b.dataset.vote;
@@ -488,4 +590,7 @@ function renderStats() {
 setInterval(renderStats, 5000);
 
 applyLang();
-show(current());
+fetch("/api/me").then(r => r.json()).then(d => { user = d.user; }).catch(() => {}).finally(() => {
+  renderAccount();
+  show(current());
+});

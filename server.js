@@ -6,6 +6,8 @@
 import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
+import { AccountError, COOKIE, logIn, logOut, sessionCookie, signUp, userFromToken } from "./accounts.js";
+import { migrate } from "./db.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const MODEL = process.env.REALTIME_MODEL || "gpt-realtime-2.1";
@@ -23,13 +25,16 @@ const TYPES = {
 
 const FACTS = ["job", "size", "material", "crew", "days", "customer"];
 
-function instructions(lang) {
+function instructions(lang, name) {
   const language = lang === "de"
     ? "Speak German. Use \"du\" with the Handwerker."
     : "Speak English.";
+  // The name comes from the sign-up form, so keep it short and plain
+  const who = name ? `The Handwerker's name is ${JSON.stringify(String(name).slice(0, 60))}. Greet them by name.` : "";
   return `You are the friendly office assistant of a German tradesperson (Handwerker: tiler, painter, plumber and so on).
 The Handwerker is calling you from their phone to prepare a quote (in Germany: Angebot) for a customer.
 ${language}
+${who}
 
 How you talk:
 - Like a real office assistant on the phone: warm, relaxed, short.
@@ -108,7 +113,7 @@ const TOOLS = [
   },
 ];
 
-async function createSession(lang) {
+async function createSession(lang, name) {
   const res = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
     method: "POST",
     headers: {
@@ -120,7 +125,7 @@ async function createSession(lang) {
       session: {
         type: "realtime",
         model: MODEL,
-        instructions: instructions(lang),
+        instructions: instructions(lang, name),
         tools: TOOLS,
         tool_choice: "auto",
         audio: {
@@ -138,9 +143,38 @@ async function createSession(lang) {
   return { value: data.value, model: MODEL };
 }
 
-function send(res, status, body, type = "application/json; charset=utf-8") {
-  res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store" });
+function send(res, status, body, type = "application/json; charset=utf-8", headers = {}) {
+  res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store", ...headers });
   res.end(typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body));
+}
+
+function cookieToken(req) {
+  const match = (req.headers.cookie || "").match(new RegExp(`(?:^|;\\s*)${COOKIE}=([a-f0-9]+)`));
+  return match?.[1] || null;
+}
+
+// Behind Coolify's proxy the app sees plain http, the proxy tells us it was https
+function isHttps(req) {
+  return req.headers["x-forwarded-proto"] === "https";
+}
+
+async function readJson(req) {
+  let body = "";
+  for await (const chunk of req) {
+    body += chunk;
+    if (body.length > 10_000) throw new AccountError("too_large");
+  }
+  try { return JSON.parse(body || "{}"); } catch { throw new AccountError("bad_request"); }
+}
+
+async function handleAccount(req, res, action) {
+  if (action === "logout") {
+    await logOut(cookieToken(req));
+    return send(res, 200, { ok: true }, undefined, { "Set-Cookie": sessionCookie("", isHttps(req)) });
+  }
+  const { email, password, name } = await readJson(req);
+  const { user, token } = action === "signup" ? await signUp(email, password, name) : await logIn(email, password);
+  send(res, 200, { user }, undefined, { "Set-Cookie": sessionCookie(token, isHttps(req)) });
 }
 
 async function serveStatic(res, pathname) {
@@ -155,16 +189,27 @@ async function serveStatic(res, pathname) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
   try {
+    if (req.method === "POST" && ["/api/signup", "/api/login", "/api/logout"].includes(url.pathname)) {
+      return await handleAccount(req, res, url.pathname.slice(5));
+    }
+    if (req.method === "GET" && url.pathname === "/api/me") {
+      return send(res, 200, { user: await userFromToken(cookieToken(req)) });
+    }
     if (req.method === "POST" && url.pathname === "/api/session") {
+      // Only logged-in users can start a call, so strangers can't spend the OpenAI credit
+      const user = await userFromToken(cookieToken(req));
+      if (!user) return send(res, 401, { error: "login_required" });
       if (!process.env.OPENAI_API_KEY) return send(res, 500, { error: "OPENAI_API_KEY is missing. Add it to the .env file." });
-      return send(res, 200, await createSession(url.searchParams.get("lang")));
+      return send(res, 200, await createSession(url.searchParams.get("lang"), user.name));
     }
     if (req.method === "GET") return await serveStatic(res, url.pathname);
     send(res, 404, { error: "Not found" });
   } catch (err) {
+    if (err instanceof AccountError) return send(res, 400, { error: err.message });
     console.error(err);
     send(res, 502, { error: err.message });
   }
 });
 
+await migrate();
 server.listen(PORT, () => console.log(`Quote assistant running on http://localhost:${PORT}`));
