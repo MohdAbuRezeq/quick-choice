@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quote Assistant Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+<style>
+  /* Tokens: plaster wall, workwear blue, folding-ruler yellow */
+  :root {
+    --plaster: #E7EAE8;
+    --paper: #FFFFFF;
+    --blau: #1C3150;
+    --blau-2: #26416A;
+    --blau-3: #34557F;
+    --ink: #17212E;
+    --muted: #5A6575;
+    --line: #CBD2D9;
+    --ruler: #F3C623;
+    --ruler-ink: #3A2E00;
+    --green: #169C47;
+    --green-hi: #1DB955;
+    --red: #D4372B;
+    --font: "Archivo", system-ui, sans-serif;
+    --r-big: 28px;
+    --r-mid: 14px;
+    --r-small: 8px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--font);
+    background: #C9CFCC;
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--ruler); outline-offset: 2px; }
+
+  /* Mockup switcher (not part of the real app) */
+  .mockbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    padding: 8px 16px;
+    background: #2B2F33; color: #E8EAEC; font-size: 13px;
+  }
+  .mockbar strong { margin-right: 6px; font-weight: 600; opacity: .7; }
+  .mockbar button {
+    border: 1px solid #4A5057; background: transparent; border-radius: 999px;
+    padding: 4px 12px; font-size: 13px;
+  }
+  .mockbar button[aria-current="true"] { background: var(--ruler); color: var(--ruler-ink); border-color: var(--ruler); }
+  .mockbar .spacer { flex: 1; }
+
+  /* Phone frame on wide screens, full screen on phones */
+  .device {
+    width: 100%; max-width: 410px; margin: 24px auto;
+    min-height: 840px;
+    background: var(--plaster);
+    border-radius: 40px; overflow: hidden;
+    box-shadow: 0 0 0 10px #1A1D20, 0 30px 60px rgba(20, 30, 40, .35);
+    position: relative;
+  }
+  body.wide .device { max-width: none; margin: 0; border-radius: 0; box-shadow: none; min-height: calc(100vh - 44px); }
+  @media (max-width: 480px) {
+    body { background: var(--plaster); }
+    .device { margin: 0; border-radius: 0; box-shadow: none; min-height: calc(100vh - 44px); }
+  }
+
+  .screen { display: none; min-height: inherit; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* Shared top bar */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px 8px; gap: 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-stretch: 110%; }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 6px;
+    background: var(--ruler) repeating-linear-gradient(90deg, transparent 0 5px, var(--ruler-ink) 5px 6px) bottom / 100% 7px no-repeat;
+  }
+  .lang {
+    display: inline-flex; border: 1.5px solid currentColor; border-radius: 999px; padding: 2px;
+    font-size: 13px; font-weight: 700;
+  }
+  .lang button { border: 0; background: transparent; padding: 3px 10px; border-radius: 999px; }
+  .lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .on-blue .lang button[aria-pressed="true"] { background: var(--paper); color: var(--blau); }
+
+  /* Home */
+  .home-body { flex: 1; display: flex; flex-direction: column; padding: 12px 24px 28px; }
+  .home-body h1 {
+    font-size: 40px; line-height: 1.02; font-weight: 800; font-stretch: 118%;
+    letter-spacing: -0.01em; margin: 28px 0 12px;
+  }
+  .home-body .lead { color: var(--muted); margin: 0; max-width: 30ch; }
+  .call-zone { display: flex; flex-direction: column; align-items: center; margin: 44px 0 36px; gap: 14px; }
+  .call-btn {
+    width: 136px; height: 136px; border-radius: 50%; border: 0;
+    background: var(--green); color: #fff;
+    display: grid; place-items: center;
+    box-shadow: 0 0 0 10px rgba(22, 156, 71, .16), 0 14px 26px rgba(22, 156, 71, .35);
+    transition: transform .12s ease, background .12s ease;
+  }
+  .call-btn:hover { background: var(--green-hi); }
+  .call-btn:active { transform: scale(.96); }
+  .call-btn svg { width: 54px; height: 54px; }
+  .call-label { font-weight: 700; font-size: 18px; }
+  .type-link { background: none; border: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: 15px; }
+  .recent h2 { font-size: 15px; font-weight: 700; margin: 0 0 8px; }
+  .recent ul { list-style: none; margin: 0; padding: 0; border-top: 1.5px solid var(--line); }
+  .recent li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1.5px solid var(--line); }
+  .recent .who { color: var(--muted); font-size: 14px; }
+  .recent .amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Call */
+  .on-blue { background: var(--blau); color: #fff; }
+  #screen-call .topbar { padding-bottom: 0; }
+  .call-head { text-align: center; padding: 8px 20px 0; }
+  .call-head .name { font-size: 22px; font-weight: 700; font-stretch: 112%; }
+  .call-head .meta { opacity: .75; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .voice {
+    width: 104px; height: 104px; margin: 18px auto 14px; border-radius: 50%;
+    background: var(--blau-2); display: flex; align-items: center; justify-content: center; gap: 5px;
+    position: relative;
+  }
+  .voice::after {
+    content: ""; position: absolute; inset: -10px; border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, .25); opacity: 0;
+  }
+  .voice.speaking::after { animation: ring 1.4s ease-out infinite; }
+  .voice i { width: 6px; height: 10px; border-radius: 3px; background: #fff; display: block; transition: height .2s; }
+  .voice.speaking i { animation: bar .9s ease-in-out infinite; }
+  .voice.speaking i:nth-child(2) { animation-delay: .15s; }
+  .voice.speaking i:nth-child(3) { animation-delay: .3s; }
+  .voice.speaking i:nth-child(4) { animation-delay: .45s; }
+  .voice.speaking i:nth-child(5) { animation-delay: .6s; }
+  @keyframes bar { 0%, 100% { height: 10px; } 50% { height: 38px; } }
+  @keyframes ring { 0% { opacity: .9; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.35); } }
+
+  /* The folding ruler: one segment per fact the assistant has collected */
+  .ruler-wrap { padding: 0 20px; }
+  .ruler-cap { font-size: 12px; opacity: .75; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .ruler { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+  .seg {
+    height: 34px; border-radius: 3px; position: relative;
+    background: rgba(255, 255, 255, .1)
+      repeating-linear-gradient(90deg, transparent 0 7px, rgba(255, 255, 255, .25) 7px 8px) top / 100% 7px no-repeat;
+    font-size: 10.5px; font-weight: 700; display: flex; align-items: flex-end; padding: 0 5px 4px;
+    color: rgba(255, 255, 255, .55); overflow: hidden; white-space: nowrap;
+    transition: background-color .35s ease, color .35s ease;
+  }
+  .seg.filled {
+    background-color: var(--ruler); color: var(--ruler-ink);
+    background-image: repeating-linear-gradient(90deg, transparent 0 7px, var(--ruler-ink) 7px 8px);
+  }
+
+  .transcript {
+    flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px;
+    min-height: 220px; max-height: 330px;
+    margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, .12);
+  }
+  .msg { max-width: 84%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.35; }
+  .msg.a { background: var(--blau-2); align-self: flex-start; border-bottom-left-radius: 6px; }
+  .msg.u { background: var(--paper); color: var(--ink); align-self: flex-end; border-bottom-right-radius: 6px; }
+  .msg.typed::after { content: " (typed)"; opacity: .55; font-size: 12px; }
+  html[lang="de"] .msg.typed::after { content: " (getippt)"; }
+
+  .call-foot { padding: 8px 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+  .typebox { display: flex; gap: 8px; }
+  .typebox input {
+    flex: 1; min-width: 0; border: 0; border-radius: 999px; padding: 10px 16px; font-size: 15px;
+    background: rgba(255, 255, 255, .12); color: #fff;
+  }
+  .typebox input::placeholder { color: rgba(255, 255, 255, .6); }
+  .typebox button { border: 0; border-radius: 999px; padding: 10px 16px; background: rgba(255, 255, 255, .2); color: #fff; font-weight: 700; }
+  .controls { display: flex; justify-content: center; gap: 28px; align-items: center; }
+  .round {
+    width: 64px; height: 64px; border-radius: 50%; border: 0; display: grid; place-items: center;
+    background: rgba(255, 255, 255, .14); color: #fff;
+  }
+  .round svg { width: 28px; height: 28px; }
+  .round[aria-pressed="true"] { background: #fff; color: var(--blau); }
+  .round.hang { background: var(--red); width: 72px; height: 72px; }
+  .round-label { display: block; text-align: center; font-size: 12px; opacity: .8; margin-top: 6px; }
+  .done-btn {
+    border: 0; border-radius: var(--r-mid); padding: 16px; font-weight: 800; font-size: 17px;
+    background: var(--ruler); color: var(--ruler-ink); display: none;
+  }
+  .done .done-btn { display: block; }
+  .done .controls, .done .typebox { display: none; }
+
+  /* Quote */
+  .quote-body { padding: 4px 14px 32px; display: flex; flex-direction: column; gap: 16px; }
+  .back { border: 0; background: none; font-weight: 700; padding: 6px 0; display: inline-flex; gap: 6px; align-items: center; }
+  .doc {
+    background: var(--paper); border-radius: var(--r-small); padding: 22px 18px 20px;
+    box-shadow: 0 1px 0 var(--line), 0 10px 24px rgba(28, 49, 80, .12);
+    font-size: 13px; line-height: 1.45;
+  }
+  .doc-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .doc-firm { font-weight: 800; font-size: 16px; font-stretch: 112%; }
+  .doc-small { color: var(--muted); font-size: 11.5px; }
+  .doc-sender { color: var(--muted); font-size: 10.5px; border-bottom: 1px solid var(--line); padding-bottom: 2px; margin: 22px 0 6px; display: inline-block; }
+  .doc-to { margin: 0 0 18px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 1px 10px; font-size: 11.5px; text-align: right; }
+  .doc-meta dt { color: var(--muted); }
+  .doc-meta dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .doc h2 { font-size: 24px; font-weight: 800; font-stretch: 116%; margin: 4px 0 4px; }
+  .doc .intro { margin: 0 0 14px; }
+  .items { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .items th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 6px 4px; border-bottom: 1.5px solid var(--ink); }
+  .items td { padding: 8px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .items .num { text-align: right; white-space: nowrap; }
+  .items .qty { color: var(--muted); font-size: 11.5px; display: block; }
+  .open-price {
+    display: inline-block; border: 1.5px dashed #B99300; background: #FFF6D6; color: #6B5500;
+    border-radius: 4px; padding: 0 6px; font-weight: 700; font-size: 11.5px;
+  }
+  .totals { margin: 12px 0 0 auto; width: 76%; font-variant-numeric: tabular-nums; }
+  .totals div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .totals .grand { border-top: 1.5px solid var(--ink); margin-top: 4px; padding-top: 7px; font-weight: 800; font-size: 16px; }
+  .note { margin-top: 12px; padding: 8px 10px; background: #FFF6D6; border-left: 3px solid var(--ruler); font-size: 12px; }
+  .doc-foot { margin-top: 18px; color: var(--muted); font-size: 11px; }
+
+  .actions { display: flex; gap: 10px; }
+  .btn {
+    flex: 1; border: 0; border-radius: var(--r-mid); padding: 14px; font-weight: 800; font-size: 16px;
+  }
+  .btn.primary { background: var(--blau); color: #fff; }
+  .btn.ghost { background: transparent; border: 1.5px solid var(--ink); }
+
+  .vote { background: var(--paper); border-radius: var(--r-mid); padding: 18px; border: 1.5px solid var(--line); }
+  .vote p { margin: 0 0 12px; font-weight: 700; font-size: 17px; }
+  .vote-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .vote-opts button {
+    border: 1.5px solid var(--ink); background: transparent; border-radius: var(--r-small);
+    padding: 11px 0; font-weight: 700;
+  }
+  .vote-opts button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .vote .thanks { margin: 10px 0 0; font-size: 14px; color: var(--muted); min-height: 1.4em; font-weight: 400; }
+
+  /* Stats (projector) */
+  #screen-stats { padding: 28px clamp(16px, 4vw, 64px) 40px; }
+  .stats-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .stats-top h1 { margin: 0; font-size: clamp(22px, 2.6vw, 36px); font-weight: 700; font-stretch: 112%; }
+  .live { display: inline-flex; align-items: center; gap: 8px; font-size: clamp(14px, 1.3vw, 18px); opacity: .85; font-variant-numeric: tabular-nums; }
+  .live::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--green-hi); animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .stats-grid { flex: 1; display: grid; grid-template-columns: 1fr 1.4fr; gap: clamp(24px, 5vw, 80px); align-items: center; margin-top: 24px; }
+  .big-count {
+    font-size: clamp(120px, 20vw, 300px); line-height: .85; font-weight: 900; font-stretch: 125%;
+    color: var(--ruler); font-variant-numeric: tabular-nums;
+  }
+  .big-label { font-size: clamp(20px, 2.4vw, 34px); font-weight: 600; margin-top: 12px; }
+  .vq { font-size: clamp(20px, 2.2vw, 32px); font-weight: 700; margin: 0 0 24px; }
+  .bar-row { display: grid; grid-template-columns: 5.5em 1fr 4.8em; gap: 16px; align-items: center; margin-bottom: 18px; font-size: clamp(18px, 2vw, 30px); }
+  .bar-row .bl { font-weight: 700; }
+  .bar-track { height: clamp(28px, 3.6vw, 56px); background: var(--blau-2); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; width: 0; transition: width .8s ease; }
+  .bar-row.yes .bar-fill { background: var(--green-hi); }
+  .bar-row.maybe .bar-fill { background: var(--ruler); }
+  .bar-row.no .bar-fill { background: #9FB0C6; }
+  .bar-row .bn { text-align: right; font-variant-numeric: tabular-nums; font-weight: 800; }
+  .bar-row .bn small { display: block; font-size: .55em; font-weight: 500; opacity: .75; }
+  .total-votes { font-size: clamp(14px, 1.3vw, 18px); opacity: .75; }
+  @media (max-width: 760px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 4.5em 1fr 3.8em; gap: 10px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
+  @media print {
+    body * { visibility: hidden; }
+    body { background: #fff; }
+    .doc, .doc * { visibility: visible; }
+    .doc { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; font-size: 12pt; padding: 0; }
+    .mockbar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="mockbar" aria-label="Mockup screens">
+  <strong>Mockup</strong>
+  <button data-go="home">Home</button>
+  <button data-go="call">Call</button>
+  <button data-go="quote">Quote</button>
+  <button data-go="stats">/stats</button>
+  <span class="spacer"></span>
+  <button id="reset">Reset</button>
+</nav>
+
+<div class="device">
+
+  <!-- HOME -->
+  <section class="screen" id="screen-home">
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Fliesen Weber</div>
+      <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+    </div>
+    <div class="home-body">
+      <h1 data-i18n="homeTitle"></h1>
+      <p class="lead" data-i18n="homeLead"></p>
+      <div class="call-zone">
+        <button class="call-btn" data-go="call" data-i18n-label="startCall">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>
+        </button>
+        <span class="call-label" data-i18n="startCall"></span>
+        <button class="type-link" id="type-instead" data-i18n="typeInstead"></button>
+      </div>
+      <div class="recent">
+        <h2 data-i18n="recent"></h2>
+        <ul>
+          <li><div><div data-i18n="r1"></div><div class="who">Huber, 22.10.2026</div></div><div class="amt" data-money="124000"></div></li>
+          <li><div><div data-i18n="r2"></div><div class="who">Becker, 15.10.2026</div></div><div class="amt" data-money="86000"></div></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALL -->
+  <section class="screen on-blue" id="screen-call">
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Fliesen Weber</div>
+      <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+    </div>
+    <div class="call-head">
+      <div class="name" data-i18n="assistant"></div>
+      <div class="meta"><span id="call-state"></span>, <span id="timer">00:00</span></div>
+    </div>
+    <div class="voice" id="voice" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="ruler-wrap">
+      <div class="ruler-cap"><span data-i18n="rulerCap"></span><span id="ruler-count">0 / 6</span></div>
+      <div class="ruler" id="ruler"></div>
+    </div>
+    <div class="transcript" id="transcript" aria-live="polite"></div>
+    <div class="call-foot" id="call-foot">
+      <form class="typebox" id="typebox">
+        <input id="typed" autocomplete="off" data-i18n-ph="typePh">
+        <button type="submit" data-i18n="send"></button>
+      </form>
+      <div class="controls">
+        <div><button class="round" id="mute" aria-pressed="false" data-i18n-label="mute">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></svg>
+        </button><span class="round-label" data-i18n="mute"></span></div>
+        <div><button class="round hang" id="hangup" data-i18n-label="hangup">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1a1 1 0 0 1-.56.9 11.5 11.5 0 0 0-2.66 1.85 1 1 0 0 1-1.4 0L.29 13.08a1 1 0 0 1 0-1.41C3.34 8.77 7.46 7 12 7s8.66 1.77 11.71 4.67a1 1 0 0 1 0 1.41l-2.48 2.49a1 1 0 0 1-1.4 0 11.3 11.3 0 0 0-2.67-1.85 1 1 0 0 1-.56-.9v-3.1A15 15 0 0 0 12 9z"/></svg>
+        </button><span class="round-label" data-i18n="hangup"></span></div>
+      </div>
+      <button class="done-btn" data-go="quote" data-i18n="openQuote"></button>
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <section class="screen" id="screen-quote">
+    <div class="topbar">
+      <button class="back" data-go="home"><span aria-hidden="true">&lsaquo;</span> <span data-i18n="back"></span></button>
+      <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+    </div>
+    <div class="quote-body">
+      <article class="doc" id="doc">
+        <div class="doc-head">
+          <div>
+            <div class="doc-firm">Fliesen Weber</div>
+            <div class="doc-small">Jonas Weber, Meisterbetrieb<br>Hauptstraße 4, 80331 München<br>089 123 456 78</div>
+          </div>
+          <dl class="doc-meta">
+            <dt data-i18n="qNo"></dt><dd>2026-014</dd>
+            <dt data-i18n="qDate"></dt><dd data-i18n="dateVal"></dd>
+            <dt data-i18n="qValid"></dt><dd data-i18n="validVal"></dd>
+          </dl>
+        </div>
+        <div class="doc-sender">Fliesen Weber, Hauptstraße 4, 80331 München</div>
+        <div class="doc-to">Frau Anna Schneider<br>Lindenstraße 12<br>80469 München</div>
+        <h2 data-i18n="docTitle"></h2>
+        <p class="intro" data-i18n="intro"></p>
+        <table class="items">
+          <thead><tr><th data-i18n="thItem"></th><th class="num" data-i18n="thPrice"></th><th class="num" data-i18n="thSum"></th></tr></thead>
+          <tbody id="items"></tbody>
+        </table>
+        <div class="totals">
+          <div><span data-i18n="net"></span><span id="t-net"></span></div>
+          <div><span data-i18n="vat"></span><span id="t-vat"></span></div>
+          <div class="grand"><span data-i18n="total"></span><span id="t-total"></span></div>
+        </div>
+        <div class="note" data-i18n="openNote"></div>
+        <div class="doc-foot" data-i18n="docFoot"></div>
+      </article>
+
+      <div class="actions">
+        <button class="btn primary" id="pdf" data-i18n="savePdf"></button>
+        <button class="btn ghost" data-go="call" data-i18n="editByVoice"></button>
+      </div>
+
+      <div class="vote">
+        <p data-i18n="voteQ"></p>
+        <div class="vote-opts" role="group">
+          <button data-vote="yes" aria-pressed="false" data-i18n="yes"></button>
+          <button data-vote="maybe" aria-pressed="false" data-i18n="maybe"></button>
+          <button data-vote="no" aria-pressed="false" data-i18n="no"></button>
+        </div>
+        <p class="thanks" id="thanks" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="screen on-blue" id="screen-stats">
+    <div class="stats-top">
+      <h1 data-i18n="statsTitle"></h1>
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+        <span class="live" id="live"></span>
+        <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="de">DE</button></div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div>
+        <div class="big-count" id="s-quotes">0</div>
+        <div class="big-label" data-i18n="quotesMade"></div>
+      </div>
+      <div>
+        <p class="vq" data-i18n="voteQ"></p>
+        <div class="bar-row yes"><span class="bl" data-i18n="yes"></span><div class="bar-track"><div class="bar-fill"></div></div><span class="bn"></span></div>
+        <div class="bar-row maybe"><span class="bl" data-i18n="maybe"></span><div class="bar-track"><div class="bar-fill"></div></div><span class="bn"></span></div>
+        <div class="bar-row no"><span class="bl" data-i18n="no"></span><div class="bar-track"><div class="bar-fill"></div></div><span class="bn"></span></div>
+        <div class="total-votes" id="s-votes"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ---------- Text ---------- */
+const T = {
+  en: {
+    homeTitle: "Good evening, Jonas.",
+    homeLead: "Tell me about the job. I'll ask a few short questions and write the quote for you.",
+    startCall: "Start call",
+    typeInstead: "No microphone? Type instead",
+    recent: "Recent quotes",
+    r1: "Kitchen splashback", r2: "Hallway floor",
+    assistant: "Your office assistant",
+    speaking: "Speaking", listening: "Listening", muted: "Muted", ended: "Call ended",
+    rulerCap: "What I know so far",
+    segs: ["Job", "Size", "Material", "Crew", "Days", "Customer"],
+    typePh: "Type your answer", send: "Send",
+    mute: "Mute", hangup: "Hang up",
+    openQuote: "Open the quote",
+    back: "Home",
+    qNo: "Quote no.", qDate: "Date", qValid: "Valid until",
+    dateVal: "29 Oct 2026", validVal: "28 Nov 2026",
+    docTitle: "Quote (Angebot)",
+    intro: "Dear Mrs Schneider, thank you for your enquiry. For the new bathroom floor I offer the following work:",
+    thItem: "Item", thPrice: "Unit price", thSum: "Amount",
+    net: "Net amount", vat: "VAT 19%", total: "Total",
+    open: "open",
+    openNote: "Plus floor tiles at cost. The price follows once you have chosen the tiles.",
+    docFoot: "This quote is valid for 30 days. Payment within 14 days after the work is finished. Bank: Stadtsparkasse München, IBAN DE00 0000 0000 0000 0000 00",
+    savePdf: "Save as PDF", editByVoice: "Change by voice",
+    voteQ: "Would you pay €39 a month for this?",
+    yes: "Yes", maybe: "Maybe", no: "No",
+    thanks: "Thanks, your vote is saved.",
+    statsTitle: "Quote assistant, live test",
+    quotesMade: "quotes made",
+    votesTotal: n => `${n} votes so far`,
+    updated: t => `Live, updated ${t}`,
+    units: { m2: "m²", h: "h", flat: "flat rate" },
+    items: [
+      "Remove old floor tiles and take them away",
+      "Prime and level the floor",
+      "Lay new floor tiles (2 people, 2 days)",
+      "Tile adhesive and grout",
+      "Floor tiles chosen by the customer (incl. 10% offcuts)"
+    ],
+    script: [
+      "Hi Jonas, it's your office. Which job are we quoting tonight?",
+      "Bathroom, 8 square metres, old tiles out.",
+      "Got it, 8 square metres. Just the floor, or the walls too?",
+      "Just the floor.",
+      "Who pays for the materials, you or the customer?",
+      "I buy them and put them on the quote.",
+      "Do you know the price of the tiles yet?",
+      "No, the customer is still choosing.",
+      "Fine, I'll leave that price open. How many people, and for how many days?",
+      "Two of us, two days.",
+      "Last thing: who is the customer?",
+      "Mrs Schneider, Lindenstraße 12 in Munich.",
+      "Thanks, Jonas. Your quote is ready."
+    ]
+  },
+  de: {
+    homeTitle: "Guten Abend, Jonas.",
+    homeLead: "Erzähl mir vom Auftrag. Ich stelle ein paar kurze Fragen und schreibe das Angebot für dich.",
+    startCall: "Anruf starten",
+    typeInstead: "Kein Mikrofon? Lieber tippen",
+    recent: "Letzte Angebote",
+    r1: "Küchenrückwand", r2: "Flurboden",
+    assistant: "Dein Büro",
+    speaking: "Spricht", listening: "Hört zu", muted: "Stumm", ended: "Anruf beendet",
+    rulerCap: "Das weiß ich schon",
+    segs: ["Arbeit", "Fläche", "Material", "Leute", "Tage", "Kunde"],
+    typePh: "Antwort eintippen", send: "Senden",
+    mute: "Stumm", hangup: "Auflegen",
+    openQuote: "Angebot öffnen",
+    back: "Start",
+    qNo: "Angebot Nr.", qDate: "Datum", qValid: "Gültig bis",
+    dateVal: "29.10.2026", validVal: "28.11.2026",
+    docTitle: "Angebot",
+    intro: "Sehr geehrte Frau Schneider, vielen Dank für Ihre Anfrage. Für den neuen Badboden biete ich Ihnen folgende Leistungen an:",
+    thItem: "Leistung", thPrice: "Einzelpreis", thSum: "Betrag",
+    net: "Nettobetrag", vat: "MwSt. 19 %", total: "Gesamtbetrag",
+    open: "offen",
+    openNote: "Zzgl. Bodenfliesen nach Aufwand. Der Preis folgt, sobald Sie die Fliesen ausgesucht haben.",
+    docFoot: "Dieses Angebot ist 30 Tage gültig. Zahlung innerhalb von 14 Tagen nach Fertigstellung. Bank: Stadtsparkasse München, IBAN DE00 0000 0000 0000 0000 00",
+    savePdf: "Als PDF speichern", editByVoice: "Per Sprache ändern",
+    voteQ: "Würdest du 39 € im Monat dafür zahlen?",
+    yes: "Ja", maybe: "Vielleicht", no: "Nein",
+    thanks: "Danke, deine Stimme ist gespeichert.",
+    statsTitle: "Angebots-Assistent, Live-Test",
+    quotesMade: "Angebote erstellt",
+    votesTotal: n => `${n} Stimmen bisher`,
+    updated: t => `Live, aktualisiert ${t}`,
+    units: { m2: "m²", h: "Std.", flat: "pauschal" },
+    items: [
+      "Alte Bodenfliesen entfernen und entsorgen",
+      "Boden grundieren und ausgleichen",
+      "Neue Bodenfliesen verlegen (2 Personen, 2 Tage)",
+      "Fliesenkleber und Fugenmörtel",
+      "Bodenfliesen nach Kundenwahl (inkl. 10 % Verschnitt)"
+    ],
+    script: [
+      "Hallo Jonas, hier ist dein Büro. Um welchen Auftrag geht es heute?",
+      "Bad, 8 Quadratmeter, alte Fliesen raus.",
+      "Alles klar, 8 Quadratmeter. Nur der Boden oder auch die Wände?",
+      "Nur der Boden.",
+      "Wer zahlt das Material, du oder der Kunde?",
+      "Ich kaufe es und schreibe es aufs Angebot.",
+      "Weißt du schon, was die Fliesen kosten?",
+      "Nein, die Kundin sucht noch aus.",
+      "Gut, dann lasse ich den Preis offen. Wie viele Leute und wie viele Tage?",
+      "Wir sind zu zweit, zwei Tage.",
+      "Zum Schluss: Wer ist die Kundin oder der Kunde?",
+      "Frau Schneider, Lindenstraße 12 in München.",
+      "Danke, Jonas. Dein Angebot ist fertig."
+    ]
+  }
+};
+
+/* Who speaks each line, and which ruler segments that answer fills */
+const TURNS = [
+  { who: "a" }, { who: "u", fills: [0, 1] },
+  { who: "a" }, { who: "u" },
+  { who: "a" }, { who: "u", fills: [2] },
+  { who: "a" }, { who: "u" },
+  { who: "a" }, { who: "u", fills: [3, 4] },
+  { who: "a" }, { who: "u", fills: [5] },
+  { who: "a", end: true }
+];
+
+/* Quote lines. Prices in cents, null = unknown. The code does all the maths. */
+const ITEMS = [
+  { qty: 8,   unit: "m2",   price: 2200 },
+  { qty: 8,   unit: "m2",   price: 1400 },
+  { qty: 32,  unit: "h",    price: 5200 },
+  { qty: 1,   unit: "flat", price: 9500 },
+  { qty: 8.8, unit: "m2",   price: null }
+];
+const VAT_RATE = 0.19;
+
+/* ---------- State ---------- */
+let lang = "en";
+const call = { step: 0, shown: [], timers: [], started: 0, tick: null, muted: false, filled: new Set() };
+const stats = { quotes: 46, yes: 19, maybe: 14, no: 8 };
+let myVote = null;
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+/* ---------- Language ---------- */
+function money(cents) {
+  return new Intl.NumberFormat(lang === "de" ? "de-DE" : "en-IE", { style: "currency", currency: "EUR" }).format(cents / 100);
+}
+function num(n) {
+  return new Intl.NumberFormat(lang === "de" ? "de-DE" : "en-IE", { maximumFractionDigits: 2 }).format(n);
+}
+function applyLang() {
+  const t = T[lang];
+  document.documentElement.lang = lang;
+  $$("[data-i18n]").forEach(el => { const v = t[el.dataset.i18n]; if (typeof v === "string") el.textContent = v; });
+  $$("[data-i18n-ph]").forEach(el => el.placeholder = t[el.dataset.i18nPh]);
+  $$("[data-i18n-label]").forEach(el => el.setAttribute("aria-label", t[el.dataset.i18nLabel]));
+  $$("[data-lang]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  $$("[data-money]").forEach(el => el.textContent = money(+el.dataset.money));
+  renderRuler(); renderTranscript(); renderQuote(); renderStats();
+  if (myVote) $("#thanks").textContent = t.thanks;
+  setCallState(call.state || "listening");
+}
+$$("[data-lang]").forEach(b => b.addEventListener("click", () => { lang = b.dataset.lang; applyLang(); }));
+
+/* ---------- Routing ---------- */
+function go(name) {
+  if (location.hash !== "#/" + name) location.hash = "/" + name;
+  else show(name);
+}
+function show(name) {
+  if (!["home", "call", "quote", "stats"].includes(name)) name = "home";
+  $$(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-" + name));
+  $$(".mockbar [data-go]").forEach(b => b.setAttribute("aria-current", String(b.dataset.go === name)));
+  document.body.classList.toggle("wide", name === "stats");
+  if (name === "call") startCall(); else stopTimers();
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", () => show(location.hash.replace("#/", "")));
+document.addEventListener("click", e => {
+  const g = e.target.closest("[data-go]");
+  if (g) { e.preventDefault(); go(g.dataset.go); }
+});
+$("#type-instead").addEventListener("click", () => { go("call"); setTimeout(() => $("#typed").focus(), 50); });
+
+/* ---------- Call (scripted fake) ---------- */
+function renderRuler() {
+  const segs = T[lang].segs;
+  $("#ruler").innerHTML = segs.map((s, i) => `<div class="seg${call.filled.has(i) ? " filled" : ""}">${s}</div>`).join("");
+  $("#ruler-count").textContent = `${call.filled.size} / ${segs.length}`;
+}
+function renderTranscript() {
+  const box = $("#transcript");
+  box.innerHTML = call.shown.map(m =>
+    `<div class="msg ${TURNS[m.i].who}${m.custom ? " typed" : ""}">${escapeHtml(m.custom || T[lang].script[m.i])}</div>`
+  ).join("");
+  box.scrollTop = box.scrollHeight;
+}
+function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function setCallState(s) {
+  call.state = s;
+  const label = call.muted && s === "listening" ? "muted" : s;
+  $("#call-state").textContent = T[lang][label];
+  $("#voice").classList.toggle("speaking", s === "speaking");
+}
+function later(fn, ms) { call.timers.push(setTimeout(fn, ms)); }
+function stopTimers() {
+  call.timers.forEach(clearTimeout); call.timers = [];
+  clearInterval(call.tick); call.tick = null;
+}
+function startCall() {
+  stopTimers();
+  if (call.step >= TURNS.length) return; // finished call stays on screen
+  if (!call.started) call.started = Date.now();
+  call.tick = setInterval(() => {
+    const s = Math.floor((Date.now() - call.started) / 1000);
+    $("#timer").textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  }, 500);
+  playNext();
+}
+function playNext() {
+  const turn = TURNS[call.step];
+  if (!turn) return;
+  if (turn.who === "u") { // resumed while waiting for an answer
+    setCallState("listening");
+    later(() => { if (!call.muted) addUser(); else waitUnmute(); }, 1600);
+  } else {
+    setCallState("speaking");
+    addLine(call.step);
+    later(() => {
+      if (turn.end) { finishCall(); return; }
+      setCallState("listening");
+      // Fake the Handwerker's answer unless they type one first
+      later(() => { if (!call.muted) addUser(); else waitUnmute(); }, 1600);
+    }, 1900);
+  }
+}
+function waitUnmute() { later(() => { if (!call.muted) addUser(); else waitUnmute(); }, 500); }
+function addLine(i, custom) {
+  call.shown.push({ i, custom });
+  (TURNS[i].fills || []).forEach(f => call.filled.add(f));
+  call.step = i + 1;
+  renderTranscript(); renderRuler();
+}
+function addUser(custom) {
+  const turn = TURNS[call.step];
+  if (!turn || turn.who !== "u") return;
+  call.timers.forEach(clearTimeout); call.timers = [];
+  addLine(call.step, custom);
+  later(playNext, 700);
+}
+function finishCall() {
+  stopTimers();
+  setCallState("ended");
+  $("#call-foot").classList.add("done");
+  stats.quotes++;
+  renderStats();
+}
+$("#typebox").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("#typed").value.trim();
+  if (!v) return;
+  $("#typed").value = "";
+  if (!call.tick) startCall();
+  addUser(v);
+});
+$("#mute").addEventListener("click", () => {
+  call.muted = !call.muted;
+  $("#mute").setAttribute("aria-pressed", String(call.muted));
+  setCallState(call.state);
+});
+$("#hangup").addEventListener("click", () => { resetCall(); go("home"); });
+function resetCall() {
+  stopTimers();
+  Object.assign(call, { step: 0, shown: [], started: 0, muted: false, filled: new Set() });
+  $("#mute").setAttribute("aria-pressed", "false");
+  $("#timer").textContent = "00:00";
+  $("#call-foot").classList.remove("done");
+  renderTranscript(); renderRuler(); setCallState("listening");
+}
+
+/* ---------- Quote: all maths in code, in whole cents ---------- */
+function renderQuote() {
+  const t = T[lang];
+  let net = 0;
+  $("#items").innerHTML = ITEMS.map((it, i) => {
+    const qtyText = it.unit === "flat" ? t.units.flat : `${num(it.qty)} ${t.units[it.unit]}`;
+    let price, sum;
+    if (it.price == null) {
+      price = `<span class="open-price">${t.open}</span>`;
+      sum = `<span class="open-price">${t.open}</span>`;
+    } else {
+      const line = Math.round(it.qty * it.price);
+      net += line;
+      price = money(it.price);
+      sum = money(line);
+    }
+    return `<tr><td>${t.items[i]}<span class="qty">${qtyText}</span></td><td class="num">${price}</td><td class="num">${sum}</td></tr>`;
+  }).join("");
+  const vat = Math.round(net * VAT_RATE);
+  $("#t-net").textContent = money(net);
+  $("#t-vat").textContent = money(vat);
+  $("#t-total").textContent = money(net + vat);
+}
+$("#pdf").addEventListener("click", () => window.print());
+
+/* ---------- Vote ---------- */
+$$("[data-vote]").forEach(b => b.addEventListener("click", () => {
+  const v = b.dataset.vote;
+  if (myVote === v) return;
+  if (myVote) stats[myVote]--;
+  stats[v]++; myVote = v;
+  $$("[data-vote]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  $("#thanks").textContent = T[lang].thanks;
+  renderStats();
+}));
+
+/* ---------- Stats (fake live numbers) ---------- */
+function renderStats() {
+  const t = T[lang];
+  const total = stats.yes + stats.maybe + stats.no;
+  $("#s-quotes").textContent = stats.quotes;
+  ["yes", "maybe", "no"].forEach(k => {
+    const row = $(".bar-row." + k);
+    const pct = total ? Math.round(stats[k] / total * 100) : 0;
+    row.querySelector(".bar-fill").style.width = pct + "%";
+    row.querySelector(".bn").innerHTML = `${stats[k]}<small>${pct}%</small>`;
+  });
+  $("#s-votes").textContent = t.votesTotal(total);
+  $("#live").textContent = t.updated(new Date().toLocaleTimeString(lang === "de" ? "de-DE" : "en-GB"));
+}
+setInterval(() => {
+  stats.quotes++;
+  if (Math.random() < 0.7) {
+    const r = Math.random();
+    stats[r < 0.48 ? "yes" : r < 0.82 ? "maybe" : "no"]++;
+  }
+  renderStats();
+}, 4000);
+
+/* ---------- Reset ---------- */
+$("#reset").addEventListener("click", () => {
+  resetCall();
+  myVote = null;
+  $$("[data-vote]").forEach(x => x.setAttribute("aria-pressed", "false"));
+  $("#thanks").textContent = "";
+  go("home");
+});
+
+applyLang();
+show(location.hash.replace("#/", "") || "home");
+</script>
+</body>
+</html>
